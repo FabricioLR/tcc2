@@ -1,0 +1,849 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Meu Primeiro Jogo Multiplayer</title>
+
+        <style>
+            *{
+                margin: 0px;
+                padding: 0px;
+            }
+
+            body{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: rgb(59, 59, 59);
+            }
+
+            #screen {
+                image-rendering: pixelated;
+                image-rendering: crisp-edges;
+                image-rendering: -moz-crisp-edges;
+                width: 100%;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="screen" width="500" height="500"></canvas>
+    </body>
+    <script>
+        const screen = document.getElementById('screen')
+        const context = screen.getContext('2d')
+        context.fillStyle = 'white'
+        context.clearRect(0, 0, 100, 100)
+
+        var image = new Image();
+        image.src = "mystic_woods_free_2.2/sprites/characters/player.png";
+        var image2 = new Image();
+        image2.src = "mystic_woods_free_2.2/sprites/characters/slime.png";
+        var image3 = new Image()
+        image3.src = "mystic_woods_free_2.2/sprites/tilesets/floors/wooden.png"
+        var image4 = new Image()
+        image4.src = "mystic_woods_free_2.2/sprites/tilesets/walls/wooden_door_b.png"
+
+        var hitbox = new Image()
+        hitbox.src = "Sem título.png"
+
+        const LEFT = "LEFT"
+        const RIGHT = "RIGHT"
+        const UP = "UP"
+        const DOWN = "DOWN"
+
+        class Input {
+            constructor() {
+                this.heldDirections = [];
+
+                document.addEventListener("keydown", (e) => {
+                // Also check for dedicated direction list
+                    if (e.code === "ArrowUp" || e.code === "KeyW") {
+                        this.onArrowPressed(UP);
+                    }
+                    if (e.code === "ArrowDown" || e.code === "KeyS") {
+                        this.onArrowPressed(DOWN);
+                    }
+                    if (e.code === "ArrowLeft" || e.code === "KeyA") {
+                        this.onArrowPressed(LEFT);
+                    }
+                    if (e.code === "ArrowRight" || e.code === "KeyD") {
+                        this.onArrowPressed(RIGHT);
+                    }
+                })
+
+                document.addEventListener("keyup", (e) => {
+                    // Also check for dedicated direction list
+                    if (e.code === "ArrowUp" || e.code === "KeyW") {
+                        this.onArrowReleased(UP);
+                    }
+                    if (e.code === "ArrowDown" || e.code === "KeyS") {
+                        this.onArrowReleased(DOWN);
+                    }
+                    if (e.code === "ArrowLeft" || e.code === "KeyA") {
+                        this.onArrowReleased(LEFT);
+                    }
+                    if (e.code === "ArrowRight" || e.code === "KeyD") {
+                        this.onArrowReleased(RIGHT);
+                    }
+                })
+            }
+
+            get direction() {
+                return this.heldDirections[0];
+            }
+
+            onArrowPressed(direction) {
+                if (this.heldDirections.indexOf(direction) === -1) {
+                    this.heldDirections.unshift(direction);
+                }
+            }
+
+            onArrowReleased(direction) {
+                const index = this.heldDirections.indexOf(direction);
+                if (index === -1) {
+                    return;
+                }
+                this.heldDirections.splice(index, 1);
+            }
+        }
+
+       /*  var x = 100 - 17;
+        var y = 100 - 27;
+        var nextX = 100 - 17;
+        var nextY = 100 - 27; */
+
+        var x = 100;
+        var y = 100;
+        var nextX = 100;
+        var nextY = 100;
+
+        const input = new Input()
+
+        var keys = []
+
+        window.addEventListener('keydown', function (e) {
+            //console.log(e.keyCode)
+            e.preventDefault();
+            keys = (keys || []);
+            keys[e.keyCode] = (e.type == "keydown");
+        })
+        window.addEventListener('keyup', function (e) {
+            keys[e.keyCode] = (e.type == "keydown");
+        })
+
+        const floor = [
+            {x: 100, y: 100},
+            {x: 116, y: 100},
+            {x: 132, y: 100},
+            {x: 148, y: 100},
+            {x: 164, y: 100},
+            {x: 180, y: 100},
+            {x: 196, y: 100},
+            {x: 212, y: 100},
+            {x: 228, y: 100},
+            {x: 244, y: 100},
+
+            {x: 100, y: 116},
+            {x: 116, y: 116},
+            {x: 132, y: 116},
+            {x: 148, y: 116},
+            {x: 164, y: 116},
+            {x: 180, y: 116},
+            {x: 196, y: 116},
+            {x: 212, y: 116},
+            {x: 228, y: 116},
+            {x: 244, y: 116},
+
+            {x: 100, y: 132},
+            {x: 116, y: 132},
+            {x: 132, y: 132},
+            {x: 148, y: 132},
+            {x: 164, y: 132},
+            {x: 180, y: 132},
+            {x: 196, y: 132},
+            {x: 212, y: 132},
+            {x: 228, y: 132},
+            {x: 244, y: 132},
+
+            {x: 100, y: 148},
+            {x: 116, y: 148},
+            {x: 132, y: 148},
+            {x: 148, y: 148},
+            {x: 164, y: 148},
+            {x: 180, y: 148},
+            {x: 196, y: 148},
+            {x: 212, y: 148},
+            {x: 228, y: 148},
+            {x: 244, y: 148},
+
+            {x: 100, y: 164},
+            {x: 116, y: 164},
+            {x: 132, y: 164},
+            {x: 148, y: 164},
+            {x: 164, y: 164},
+            {x: 180, y: 164},
+            {x: 196, y: 164},
+            {x: 212, y: 164},
+            {x: 228, y: 164},
+            {x: 244, y: 164},
+
+            {x: 100, y: 180},
+            {x: 116, y: 180},
+            {x: 132, y: 180},
+            {x: 148, y: 180},
+            {x: 164, y: 180},
+            {x: 180, y: 180},
+            {x: 196, y: 180},
+            {x: 212, y: 180},
+            {x: 228, y: 180},
+            {x: 244, y: 180},
+        ]
+
+        const standdown = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 0}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 0}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 0}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 0}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 0}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 0}
+            }
+            ]
+        }
+
+        const standup = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 2}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 2}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 2}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 2}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 2}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 2}
+            }
+            ]
+        }
+
+        const standright = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 1}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 1}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 1}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 1}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 1}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 1}
+            }
+            ]
+        }
+
+        const standleft = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 1}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 1}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 1}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 1}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 1}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 1}
+            }
+            ]
+        }
+
+        const walkright = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 4}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 4}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 4}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 4}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 4}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 4}
+            }
+            ]
+        }
+
+        const walkleft = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 4}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 4}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 4}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 4}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 4}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 4}
+            }
+            ]
+        }
+
+        const walkdown = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 3}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 3}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 3}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 3}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 3}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 3}
+            }
+            ]
+        }
+
+        const walkup = {
+            duration: 600,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 5}
+            },
+            {
+                time: 100,
+                frame: {x: 48 * 1, y: 48 * 5}
+            },
+            {
+                time: 200,
+                frame: {x: 48 * 2, y: 48 * 5}
+            },
+            {
+                time: 300,
+                frame: {x: 48 * 3, y: 48 * 5}
+            },
+            {
+                time: 400,
+                frame: {x: 48 * 4, y: 48 * 5}
+            },
+            {
+                time: 500,
+                frame: {x: 48 * 5, y: 48 * 5}
+            }
+            ]
+        }
+
+        const attackright = {
+            duration: 490,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 7}
+            },
+            {
+                time: 190,
+                frame: {x: 48 * 1, y: 48 * 7}
+            },
+            {
+                time: 290,
+                frame: {x: 48 * 2, y: 48 * 7}
+            },
+            {
+                time: 390,
+                frame: {x: 48 * 3, y: 48 * 7, end: true}
+            }
+            ]
+        }
+
+        const attackleft = {
+            duration: 490,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 7}
+            },
+            {
+                time: 190,
+                frame: {x: 48 * 1, y: 48 * 7}
+            },
+            {
+                time: 290,
+                frame: {x: 48 * 2, y: 48 * 7}
+            },
+            {
+                time: 390,
+                frame: {x: 48 * 3, y: 48 * 7, end: true}
+            }
+            ]
+        }
+
+        const attackdown = {
+            duration: 490,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 6}
+            },
+            {
+                time: 190,
+                frame: {x: 48 * 1, y: 48 * 6}
+            },
+            {
+                time: 290,
+                frame: {x: 48 * 2, y: 48 * 6}
+            },
+            {
+                time: 390,
+                frame: {x: 48 * 3, y: 48 * 6, end: true}
+            }
+            ]
+        }
+
+        const attackup = {
+            duration: 490,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 48 * 0, y: 48 * 8}
+            },
+            {
+                time: 190,
+                frame: {x: 48 * 1, y: 48 * 8}
+            },
+            {
+                time: 290,
+                frame: {x: 48 * 2, y: 48 * 8}
+            },
+            {
+                time: 390,
+                frame: {x: 48 * 3, y: 48 * 8, end: true}
+            }
+            ]
+        }
+
+        const standdownslime = {
+            duration: 500,
+            frames: [
+            {
+                time: 0,
+                frame: {x: 32 * 0, y: 32 * 0}
+            },
+            {
+                time: 200,
+                frame: {x: 32 * 1, y: 32 * 0}
+            },
+            {
+                time: 300,
+                frame: {x: 32 * 2, y: 32 * 0}
+            },
+            {
+                time: 400,
+                frame: {x: 32 * 3, y: 32 * 0}
+            }
+            ]
+        }
+
+        const objects = []
+
+        const walls = []
+
+        function addwall(x, y, xe, ye){
+            walls.push({x, xe, y, ye})
+        }
+
+        function addobject(x, y, size){
+            objects.push([[x, y, x, y + size], [x, y + size, x + size, y + size], [x + size, y + size, x + size, y], [x + size, y, x, y]])
+        }
+
+        /* addwall(83, 72, 221, 72)
+        addwall(221 - 1, 72, 221 - 1, 148)
+
+        addwall(83, 148, 221, 148)
+        addwall(82, 72, 82, 148) */
+
+        addobject(180, 132, 15)
+
+        class FrameIndexPattern {
+            constructor(animationConfig) {
+                this.currentTime = 0;
+                this.animationConfig = animationConfig;
+                this.duration = animationConfig.duration ?? 500;
+            }
+
+            get frame() {
+                const {frames} = this.animationConfig;
+                for (let i = frames.length - 1; i >= 0; i--) {
+                    if (this.currentTime >= frames[i].time) {
+                        return frames[i].frame;
+                    }
+                }
+                throw "Time is before the first keyframe";
+            }
+
+            step(delta) {
+                this.currentTime += delta;
+                if (this.currentTime >= this.duration) {
+                    this.currentTime = 0;
+                }
+            }
+
+        }
+
+        class Animations {
+            constructor(patterns) {
+                this.patterns = patterns;
+                this.activeKey = Object.keys(this.patterns)[0];
+            }
+
+            get frame() {
+                return this.patterns[this.activeKey].frame;
+            }
+
+            play(key, startAtTime = 0) {
+                // Already playing this one
+                if (this.activeKey === key) {
+                    return;
+                }
+                // Switch
+                this.activeKey = key;
+                this.patterns[this.activeKey].currentTime = startAtTime;
+            }
+
+            step(delta) {
+                this.patterns[this.activeKey].step(delta);
+            }
+        }
+
+        const animations = new Animations({
+            walkDown: new FrameIndexPattern(walkdown),
+            walkUp: new FrameIndexPattern(walkup),
+            walkLeft: new FrameIndexPattern(walkleft),
+            walkRight: new FrameIndexPattern(walkright),
+            standDown: new FrameIndexPattern(standdown),
+            standUp: new FrameIndexPattern(standup),
+            standLeft: new FrameIndexPattern(standleft),
+            standRight: new FrameIndexPattern(standright),
+            attackRight: new FrameIndexPattern(attackright),
+            attackLeft: new FrameIndexPattern(attackleft),
+            attackDown: new FrameIndexPattern(attackdown),
+            attackUp: new FrameIndexPattern(attackup)
+        })
+
+        const animations2 = new Animations({
+            standDownSlime: new FrameIndexPattern(standdownslime),
+        })
+
+        function isSpaceFree(walls, objects, x, y) {
+            var isWallPresent = false;
+
+            /* walls.map(wall => {
+                if (x >= wall.x && x <= wall.xe && y >= wall.y && y <= wall.ye){
+                    return isWallPresent = true
+                }
+            }) */
+
+            if (!isWallPresent){
+                objects.map(object => {
+                    if (
+                        (x + 14 >= object[0][0] && x + 14 <= object[0][2] && y >= object[0][1] && y <= object[0][3]) ||
+                        (x + 14 >= object[0][0] && x + 14 <= object[0][2] && y + 14 >= object[0][1] && y + 14 <= object[0][3])  ||
+                        
+                        (x >= object[1][0] && x <= object[1][2] && y >= object[1][1] && y <= object[1][3]) ||
+                        (x + 14 >= object[1][0] && x + 14 <= object[1][2] && y >= object[1][1] && y <= object[1][3]) ||
+
+                        (x >= object[2][2] && x <= object[2][0] && y >= object[2][3] && y <= object[2][1]) ||
+                        (x >= object[2][2] && x <= object[2][0] && y + 14 >= object[2][3] && y + 14 <= object[2][1]) ||
+                        
+                        (x >= object[3][2] && x <= object[3][0] && y + 14 >= object[3][3] && y + 14 <= object[3][1]) ||
+                        (x + 14 >= object[3][2] && x + 14 <= object[3][0] && y + 14 >= object[3][3] && y + 14 <= object[3][1])
+                    ){
+                        return isWallPresent = true
+                    }
+                })
+            }
+
+
+            return !isWallPresent
+        }
+
+        var frame = {}
+        var frameslime = {}
+        var facingDirection = DOWN
+        var attack = false
+
+        function update(delta){
+            if (keys && keys[65]) {
+                if (facingDirection === LEFT) {animations.play("attackLeft");}
+                if (facingDirection === RIGHT) {animations.play("attackRight");}
+                if (facingDirection === UP) {animations.play("attackUp");}
+                if (facingDirection === DOWN) {animations.play("attackDown");}
+                attack = true
+            }
+
+            trymove()
+            
+            animations.step(delta);
+            frame = animations.frame;
+
+            animations2.step(delta);
+            frameslime = animations2.frame;
+
+            if (frame.end){
+                attack = false
+            }
+        }
+
+        function trymove(){
+            if (!attack){
+                if (keys && !keys[37] && !keys[38] && !keys[39] && !keys[40]) {
+                    if (facingDirection === LEFT) {animations.play("standLeft")}
+                    if (facingDirection === RIGHT) {animations.play("standRight")}
+                    if (facingDirection === UP) {animations.play("standUp")}
+                    if (facingDirection === DOWN) {animations.play("standDown")}
+    
+                    return;
+                }
+    
+                if (keys && keys[38]) {nextY -= 1; if (!keys[37] && !keys[39]){animations.play("walkUp")}; facingDirection = UP}
+                if (keys && keys[40]) {nextY += 1; if (!keys[37] && !keys[39]){animations.play("walkDown")}; facingDirection = DOWN}
+                if (keys && keys[37]) {nextX -= 1; animations.play("walkLeft"); facingDirection = LEFT}
+                if (keys && keys[39]) {nextX += 1; animations.play("walkRight"); facingDirection = RIGHT}
+
+                if (isSpaceFree(walls, objects, nextX, nextY)) {
+                    x = nextX;
+                    y = nextY;
+                } else {
+                    nextX = x
+                    nextY = y
+                }
+            }
+        }
+
+        function draw(){
+            context.clearRect(0, 0, 500, 500)
+
+            floor.map(position => {
+                context.drawImage(
+                    image3,
+                    0,
+                    0,
+                    16,
+                    16,
+                    position.x,
+                    position.y,
+                    16,
+                    16,
+                );
+            })
+
+            context.drawImage(
+                image2,
+                frameslime.x,
+                frameslime.y,
+                32,
+                32,
+                150 - 9,
+                150 - 12,
+                32,
+                32,
+            );
+
+            context.drawImage(
+                image4,
+                0,
+                0,
+                16,
+                16,
+                180,
+                132,
+                16,
+                16,
+            );
+
+            /* context.drawImage(
+                hitbox,
+                0,
+                0,
+                48,
+                48,
+                x,
+                y,
+                16,
+                16,
+            ); */
+
+            context.drawImage(
+                image,
+                frame.x,
+                frame.y,
+                48,
+                48,
+                x - 17,
+                y - 28,
+                48,
+                48,
+            );
+        }
+
+        class GameLoop {
+            constructor(update, render) {
+
+                this.lastFrameTime = 0;
+                this.accumulatedTime = 0;
+                this.timeStep = 1000/60; // 60 frames per second
+
+                this.update = update;
+                this.render = render;
+
+                this.rafId = null;
+                this.isRunning = false;
+            }
+
+            mainLoop = (timestamp) => {
+                if (!this.isRunning) return;
+
+                let deltaTime = timestamp - this.lastFrameTime;
+                this.lastFrameTime = timestamp;
+
+                // Accumulate all the time since the last frame.
+                this.accumulatedTime += deltaTime;
+
+                // Fixed time step updates.
+                // If there's enough accumulated time to run one or more fixed updates, run them.
+                while (this.accumulatedTime >= this.timeStep) {
+                    this.update(this.timeStep); // Here, we pass the fixed time step size.
+                    this.accumulatedTime -= this.timeStep;
+                }
+
+                // Render
+                this.render();
+
+                this.rafId = requestAnimationFrame(this.mainLoop);
+            }
+
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.rafId = requestAnimationFrame(this.mainLoop);
+                }
+            }
+
+            stop() {
+                if (this.rafId) {
+                    cancelAnimationFrame(this.rafId);
+                }
+                this.isRunning = false;
+            }
+
+        }
+
+        const gameLoop = new GameLoop(update, draw);
+        gameLoop.start();
+    </script>
+</html>
